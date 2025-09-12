@@ -5,9 +5,13 @@ import ReportForm from "@/components/ReportForm";
 import CommunityFeed from "@/components/CommunityFeed";
 import MyReports from "@/components/MyReports";
 import Footer from "@/components/Footer";
+import { useViewFromUrl } from "@/hooks/useViewFromUrl";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("home");
+
+  // Use the hook to handle view changes from URL
+  useViewFromUrl(setActiveView);
 
   const handleGetStarted = () => {
     setActiveView("report");

@@ -1,6 +1,13 @@
 import { Facebook, Twitter, Instagram, Github } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
+  const handleClick = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
   return (
     <footer className="bg-black text-white border-t border-gray-800">
       <div className="container mx-auto px-4 py-8">
@@ -18,19 +25,31 @@ export default function Footer() {
             <h3 className="text-lg font-semibold">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <a href="/" className="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
+                <Link 
+                  to="/?view=home" 
+                  className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
+                  onClick={handleClick}
+                >
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#reports" className="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
+                <Link 
+                  to="/?view=report" 
+                  className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
+                  onClick={handleClick}
+                >
                   Reports
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#community" className="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
+                <Link 
+                  to="/?view=community" 
+                  className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
+                  onClick={handleClick}
+                >
                   Community
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
