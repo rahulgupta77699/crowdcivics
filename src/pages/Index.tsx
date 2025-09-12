@@ -4,6 +4,7 @@ import HeroSection from "@/components/HeroSection";
 import ReportForm from "@/components/ReportForm";
 import CommunityFeed from "@/components/CommunityFeed";
 import MyReports from "@/components/MyReports";
+import Footer from "@/components/Footer";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("home");
@@ -26,11 +27,12 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navigation activeView={activeView} onViewChange={setActiveView} />
-      <main>
+      <main className="flex-grow">
         {renderContent()}
       </main>
+      <Footer />
     </div>
   );
 };
