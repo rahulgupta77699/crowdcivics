@@ -1,7 +1,20 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, MessageSquare, MapPin, User, Settings, Bell, Home } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Menu, X, MessageSquare, MapPin, User, Settings, Bell, Home, LogIn, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSelector from "@/components/LanguageSelector";
 
 interface NavigationProps {
   activeView: string;
@@ -10,15 +23,36 @@ interface NavigationProps {
 
 const Navigation = ({ activeView, onViewChange }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user, signOut, isLoading } = useAuth();
+  const { t } = useLanguage();
 
   const navItems = [
-    { id: "home", label: "Home", icon: Home },
-    { id: "report", label: "Report Issue", icon: MessageSquare },
-    { id: "community", label: "Community", icon: MapPin },
-    { id: "my-reports", label: "My Reports", icon: User },
+    { id: "home", label: t.nav.home, icon: Home },
+    { id: "report", label: t.nav.report, icon: MessageSquare },
+    { id: "community", label: t.nav.community, icon: MapPin },
+    { id: "my-reports", label: t.nav.myReports, icon: User },
   ];
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      onViewChange('home');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <nav className="bg-card border-b shadow-soft sticky top-0 z-50">
@@ -55,15 +89,71 @@ const Navigation = ({ activeView, onViewChange }: NavigationProps) => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button variant="ghost" size="sm">
-              <Bell className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Settings className="w-4 h-4" />
-            </Button>
-            <Badge variant="secondary" className="px-3 py-1">
-              Demo Mode
-            </Badge>
+            <LanguageSelector />
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onViewChange('my-reports')}
+                    className="cursor-pointer"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    {t.nav.myReports}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/settings')}
+                    className="cursor-pointer"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    {t.nav.settings}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="cursor-pointer text-red-600 focus:text-red-600"
+                    disabled={isLoading}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {t.nav.signOut}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate('/login')}
+                  className="flex items-center space-x-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>{t.nav.signIn}</span>
+                </Button>
+                <Button 
+                  variant="default"
+                  onClick={() => navigate('/signup')}
+                >
+                  {t.signUp.title.split(' ')[0]}
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -97,16 +187,83 @@ const Navigation = ({ activeView, onViewChange }: NavigationProps) => {
                 <span>{item.label}</span>
               </button>
             ))}
-            <div className="border-t pt-4 mt-4 flex items-center justify-between px-4">
-              <div className="flex space-x-2">
-                <Button variant="ghost" size="sm">
-                  <Bell className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <Settings className="w-4 h-4" />
-                </Button>
+            <div className="border-t pt-4 mt-4 px-4">
+              <div className="mb-4">
+                <LanguageSelector />
               </div>
-              <Badge variant="secondary">Demo Mode</Badge>
+              {user ? (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-3 py-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{user.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      onViewChange('my-reports');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full justify-start"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    {t.nav.myReports}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      navigate('/settings');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full justify-start"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    {t.nav.settings}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full justify-start text-red-600 hover:text-red-600 hover:bg-red-50"
+                    disabled={isLoading}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {t.nav.signOut}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex space-x-2 w-full">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => {
+                      navigate('/login');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center space-x-2 flex-1"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>{t.nav.signIn}</span>
+                  </Button>
+                  <Button 
+                    variant="default"
+                    onClick={() => {
+                      navigate('/signup');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex-1"
+                  >
+                    {t.signUp.title.split(' ')[0]}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}

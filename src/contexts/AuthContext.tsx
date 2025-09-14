@@ -1,33 +1,95 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-
-interface User {
-  email: string;
-  // Add more user properties as needed
-}
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiService, User, LoginCredentials, SignUpData } from '@/services/api';
+import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => void;
+  isLoading: boolean;
+  signIn: (credentials: LoginCredentials) => Promise<void>;
+  signUp: (userData: SignUpData) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const signIn = async (email: string, password: string) => {
-    // TODO: Implement actual authentication logic
-    // This is a mock implementation
-    setUser({ email });
+  // Initialize demo data and check for existing session
+  useEffect(() => {
+    apiService.initializeDemoData();
+    const currentUser = apiService.getCurrentUser();
+    setUser(currentUser);
+    setIsLoading(false);
+  }, []);
+
+  const signIn = async (credentials: LoginCredentials) => {
+    try {
+      setIsLoading(true);
+      const user = await apiService.signIn(credentials);
+      setUser(user);
+      toast({
+        title: "Welcome back!",
+        description: `Successfully signed in as ${user.name}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Sign in failed",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const signOut = () => {
-    setUser(null);
+  const signUp = async (userData: SignUpData) => {
+    try {
+      setIsLoading(true);
+      const user = await apiService.signUp(userData);
+      // Automatically sign in the new user after successful registration
+      await apiService.signIn({ email: userData.email, password: userData.password });
+      setUser(user);
+      toast({
+        title: "Welcome to Urban Guardians!",
+        description: `Account created successfully for ${user.name}. You are now signed in.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Sign up failed",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      setIsLoading(true);
+      await apiService.signOut();
+      setUser(null);
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out",
+      });
+    } catch (error) {
+      toast({
+        title: "Sign out failed",
+        description: "An error occurred while signing out",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

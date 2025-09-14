@@ -1,3 +1,6 @@
+/* Import theme styles - must come before Tailwind */
+@import './styles/themes.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   MapPin, 
   ThumbsUp, 
@@ -16,73 +17,45 @@ import {
   List,
   CheckCircle,
   AlertCircle,
-  Calendar
+  Calendar,
+  Loader2
 } from "lucide-react";
+import { apiService, Report } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 const CommunityFeed = () => {
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [reports, setReports] = useState<Report[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [upvotedReports, setUpvotedReports] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
-  // Mock data for community reports
-  const communityReports = [
-    {
-      id: 1,
-      category: "Pothole",
-      title: "Large pothole on Main Street",
-      description: "Dangerous pothole near the intersection causing vehicle damage",
-      location: "Main St & 1st Ave",
-      status: "in-progress",
-      upvotes: 23,
-      comments: 5,
-      timeAgo: "2 hours ago",
-      reporter: "John D.",
-      image: "/placeholder.svg"
-    },
-    {
-      id: 2,
-      category: "Streetlight",
-      title: "Broken streetlight in park",
-      description: "Safety concern - streetlight has been out for a week",
-      location: "Central Park, North Entrance",
-      status: "submitted",
-      upvotes: 15,
-      comments: 3,
-      timeAgo: "5 hours ago",
-      reporter: "Sarah M.",
-      image: "/placeholder.svg"
-    },
-    {
-      id: 3,
-      category: "Garbage",
-      title: "Overflowing trash bins",
-      description: "Multiple bins overflowing, attracting pests",
-      location: "Pine Street Commercial District",
-      status: "resolved",
-      upvotes: 8,
-      comments: 2,
-      timeAgo: "1 day ago",
-      reporter: "Mike L.",
-      image: "/placeholder.svg"
-    },
-    {
-      id: 4,
-      category: "Water Leak",
-      title: "Water main leak",
-      description: "Suspected water main leak causing street flooding",
-      location: "Oak Avenue near School",
-      status: "in-progress",
-      upvotes: 31,
-      comments: 12,
-      timeAgo: "3 hours ago",
-      reporter: "Lisa K.",
-      image: "/placeholder.svg"
-    }
-  ];
+  // Load reports on component mount
+  useEffect(() => {
+    const loadReports = async () => {
+      try {
+        setIsLoading(true);
+        const allReports = await apiService.getAllReports();
+        setReports(allReports);
+      } catch (error) {
+        toast({
+          title: "Failed to load reports",
+          description: "Unable to fetch community reports. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadReports();
+  }, [toast]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "submitted": return "bg-warning";
+      case "pending": return "bg-warning";
       case "in-progress": return "bg-primary";
       case "resolved": return "bg-success";
       default: return "bg-muted-foreground";
@@ -91,17 +64,54 @@ const CommunityFeed = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "submitted": return <Clock className="w-3 h-3" />;
+      case "pending": return <Clock className="w-3 h-3" />;
       case "in-progress": return <AlertCircle className="w-3 h-3" />;
       case "resolved": return <CheckCircle className="w-3 h-3" />;
       default: return <Clock className="w-3 h-3" />;
     }
   };
 
-  const filteredReports = communityReports.filter(report => {
+  const handleUpvote = (reportId: string) => {
+    if (upvotedReports.has(reportId)) {
+      setUpvotedReports(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(reportId);
+        return newSet;
+      });
+      toast({
+        title: "Vote removed",
+        description: "Your support has been removed from this report.",
+      });
+    } else {
+      setUpvotedReports(prev => new Set(prev).add(reportId));
+      toast({
+        title: "Thanks for your support!",
+        description: "Your vote helps prioritize community issues.",
+      });
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return "Less than an hour ago";
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
+  };
+
+  const filteredReports = reports.filter(report => {
     const matchesStatus = filterStatus === "all" || report.status === filterStatus;
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.location.toLowerCase().includes(searchTerm.toLowerCase());
+                         report.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         report.category.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -137,7 +147,7 @@ const CommunityFeed = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="submitted">Submitted</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="in-progress">In Progress</SelectItem>
                 <SelectItem value="resolved">Resolved</SelectItem>
               </SelectContent>
@@ -176,10 +186,43 @@ const CommunityFeed = () => {
         </TabsList>
 
         <TabsContent value="list" className="space-y-4">
-          {filteredReports.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <Card key={i} className="shadow-soft">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-5 w-20" />
+                          <Skeleton className="h-4 w-16" />
+                        </div>
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-2/3" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-8 w-16" />
+                        <Skeleton className="h-8 w-16" />
+                      </div>
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredReports.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <p className="text-muted-foreground">No issues found matching your filters.</p>
+                <p className="text-muted-foreground">
+                  {reports.length === 0 
+                    ? "No community reports yet. Be the first to report an issue!" 
+                    : "No issues found matching your filters."}
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -206,9 +249,8 @@ const CommunityFeed = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {report.timeAgo}
+                          {formatTimeAgo(report.createdAt)}
                         </div>
-                        <span>by {report.reporter}</span>
                       </div>
                     </div>
                   </div>
@@ -216,13 +258,20 @@ const CommunityFeed = () => {
                 <CardContent className="pt-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`text-muted-foreground hover:text-primary ${
+                          upvotedReports.has(report.id) ? 'text-primary bg-primary/10' : ''
+                        }`}
+                        onClick={() => handleUpvote(report.id)}
+                      >
                         <ThumbsUp className="w-4 h-4 mr-1" />
-                        {report.upvotes}
+                        {upvotedReports.has(report.id) ? 'Supported' : 'Support'}
                       </Button>
                       <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
                         <MessageCircle className="w-4 h-4 mr-1" />
-                        {report.comments}
+                        Comments
                       </Button>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">

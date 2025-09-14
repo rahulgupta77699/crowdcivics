@@ -1,19 +1,49 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Users, MapPin, Award, ArrowRight, Play } from "lucide-react";
+import { MessageSquare, Users, MapPin, Award, ArrowRight } from "lucide-react";
 import heroImage from "@/assets/hero-civic.jpg";
+import { useStatistics } from "@/contexts/StatisticsContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import VideoDemo from "@/components/VideoDemo";
 
 interface HeroSectionProps {
   onGetStarted: () => void;
 }
 
 const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
+  const { stats: appStats } = useStatistics();
+  const { t } = useLanguage();
+  
+  // Format numbers for display
+  const formatNumber = (num: number) => {
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}k`;
+    }
+    return num.toString();
+  };
+  
   const stats = [
-    { number: "2,847", label: "Issues Resolved", icon: MessageSquare },
-    { number: "15,692", label: "Active Citizens", icon: Users },
-    { number: "85%", label: "Response Rate", icon: MapPin },
-    { number: "4.8★", label: "User Rating", icon: Award },
+    { 
+      number: formatNumber(appStats.issuesResolved), 
+      label: t.hero.stats.issuesResolved, 
+      icon: MessageSquare 
+    },
+    { 
+      number: formatNumber(appStats.activeCitizens), 
+      label: t.hero.stats.activeCitizens, 
+      icon: Users 
+    },
+    { 
+      number: `${appStats.responseRate || 0}%`, 
+      label: t.hero.stats.responseRate, 
+      icon: MapPin 
+    },
+    { 
+      number: appStats.userRating > 0 ? `${appStats.userRating}★` : "N/A", 
+      label: t.hero.stats.userRating, 
+      icon: Award 
+    },
   ];
 
   return (
@@ -27,20 +57,19 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
               <Badge variant="secondary" className="w-fit px-4 py-2">
                 <span className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                  Municipal Services Platform
+                  {t.hero.badge}
                 </span>
               </Badge>
               
               <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
-                Report Issues,{" "}
+                {t.hero.title.part1}{" "}
                 <span className="civic-gradient bg-clip-text text-transparent">
-                  Build Community
+                  {t.hero.title.part2}
                 </span>
               </h1>
               
               <p className="text-xl text-muted-foreground leading-relaxed">
-                Help improve your city by reporting local issues. From potholes to broken streetlights, 
-                your voice matters in building a better community for everyone.
+                {t.hero.subtitle}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -51,13 +80,10 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
                   className="text-lg px-8 py-6 shadow-civic"
                 >
                   <MessageSquare className="w-5 h-5 mr-2" />
-                  Report an Issue
+                  {t.hero.reportButton}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                  <Play className="w-5 h-5 mr-2" />
-                  Watch Demo
-                </Button>
+                <VideoDemo />
               </div>
 
               {/* Quick Stats */}
@@ -95,8 +121,8 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
                       <MessageSquare className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">Issue Resolved!</p>
-                      <p className="text-xs text-muted-foreground">Pothole on Main St</p>
+                      <p className="font-semibold text-sm">{t.hero.floatingCards.resolved.title}</p>
+                      <p className="text-xs text-muted-foreground">{t.hero.floatingCards.resolved.subtitle}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -109,8 +135,8 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
                       <Users className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">+23 Upvotes</p>
-                      <p className="text-xs text-muted-foreground">Community Support</p>
+                      <p className="font-semibold text-sm">{t.hero.floatingCards.upvotes.title}</p>
+                      <p className="text-xs text-muted-foreground">{t.hero.floatingCards.upvotes.subtitle}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -124,9 +150,9 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">How It Works</h2>
+            <h2 className="text-3xl font-bold mb-4">{t.hero.howItWorks.title}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Simple, effective, and transparent. Report issues in three easy steps and watch your community improve.
+              {t.hero.howItWorks.subtitle}
             </p>
           </div>
 
@@ -136,9 +162,9 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
                 <div className="w-16 h-16 civic-gradient rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <MessageSquare className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">1. Report the Issue</h3>
+                <h3 className="text-xl font-semibold mb-2">{t.hero.howItWorks.step1.title}</h3>
                 <p className="text-muted-foreground">
-                  Take a photo, describe the problem, and add location details. Our form makes it quick and easy.
+                  {t.hero.howItWorks.step1.description}
                 </p>
               </CardContent>
             </Card>
@@ -148,9 +174,9 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
                 <div className="w-16 h-16 success-gradient rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <MapPin className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">2. Track Progress</h3>
+                <h3 className="text-xl font-semibold mb-2">{t.hero.howItWorks.step2.title}</h3>
                 <p className="text-muted-foreground">
-                  Monitor your report's status and receive updates as municipal teams work to resolve the issue.
+                  {t.hero.howItWorks.step2.description}
                 </p>
               </CardContent>
             </Card>
@@ -160,9 +186,9 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
                 <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Award className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">3. Build Community</h3>
+                <h3 className="text-xl font-semibold mb-2">{t.hero.howItWorks.step3.title}</h3>
                 <p className="text-muted-foreground">
-                  Earn civic points, support others' reports, and see the positive impact on your neighborhood.
+                  {t.hero.howItWorks.step3.description}
                 </p>
               </CardContent>
             </Card>
